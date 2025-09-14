@@ -1,51 +1,72 @@
 import { useCallback, useRef, useEffect } from 'react';
 
+// Create a single, shared AudioContext to be reused.
+// It starts in a "suspended" state in most browsers until a user gesture.
+let audioContext: AudioContext | null = null;
+const getAudioContext = (): AudioContext => {
+    if (!audioContext) {
+        // The 'any' type is used for webkitAudioContext to support older Safari versions.
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioContext;
+};
+
+// This hook manages loading and playing a sound via the more reliable Web Audio API.
 export const useSound = (soundUrl: string): (() => void) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+    const audioBufferRef = useRef<AudioBuffer | null>(null);
+    const isLoadedRef = useRef(false);
 
-  // This effect manages the lifecycle of the Audio object. It creates the
-  // object when the component mounts (or soundUrl changes) and cleans it
-  // up when the component unmounts.
-  useEffect(() => {
-    // Create the audio object but do not play it. This is compliant with
-    // modern browser autoplay policies that require a user gesture for playback.
-    const audio = new Audio(soundUrl);
-    audio.preload = 'auto'; // Hint to the browser to start loading the audio
-    audioRef.current = audio;
+    // Effect to fetch the audio file and decode it into a buffer.
+    // This happens once when the component mounts or the soundUrl changes.
+    useEffect(() => {
+        isLoadedRef.current = false; // Reset loading state if URL changes.
 
-    // Cleanup function:
-    // When the component unmounts or soundUrl changes, pause any ongoing
-    // playback and release the reference.
-    return () => {
-      if (audio) {
-        audio.pause();
-      }
-      audioRef.current = null;
-    };
-  }, [soundUrl]); // This effect re-runs if the soundUrl prop ever changes.
+        const loadSound = async () => {
+            try {
+                const context = getAudioContext();
+                const response = await fetch(soundUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                // Asynchronously decode the audio data.
+                const decodedData = await context.decodeAudioData(arrayBuffer);
+                audioBufferRef.current = decodedData;
+                isLoadedRef.current = true;
+            } catch (error) {
+                console.error("Failed to load or decode sound:", error);
+                isLoadedRef.current = false;
+            }
+        };
 
-  const play = useCallback(() => {
-    if (!audioRef.current) {
-      console.error("Audio element is not available.");
-      return;
-    }
-    
-    // Rewind to the start before playing. This allows the sound to be
-    // played again in rapid succession.
-    audioRef.current.currentTime = 0;
-    
-    // The .play() method returns a Promise.
-    const playPromise = audioRef.current.play();
+        loadSound();
+        
+    }, [soundUrl]);
 
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        // This error is common and expected in certain situations:
-        // 1. In sandboxed environments (like the AI Studio preview) that block audio.
-        // 2. If .play() is called without a direct user interaction (e.g., a click).
-        console.error("Audio playback failed:", error);
-      });
-    }
-  }, []); // The play function itself doesn't need dependencies as it uses the ref.
+    // The play function that uses the pre-loaded audio buffer.
+    const play = useCallback(() => {
+        if (!isLoadedRef.current || !audioBufferRef.current) {
+            console.warn("Sound not loaded yet, cannot play.");
+            return;
+        }
 
-  return play;
+        const context = getAudioContext();
+
+        // **This is the crucial fix.**
+        // On the first user interaction (the click), we resume the AudioContext
+        // if it's in a suspended state. This is required by modern browsers.
+        if (context.state === 'suspended') {
+            context.resume();
+        }
+
+        // Create a new source node from the buffer for each playback.
+        const source = context.createBufferSource();
+        source.buffer = audioBufferRef.current;
+        
+        // Connect the source to the context's destination (i.e., the speakers).
+        source.connect(context.destination);
+        
+        // Play the sound immediately.
+        source.start(0);
+
+    }, []); // This function is stable and doesn't need dependencies as it uses refs.
+
+    return play;
 };
