@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 interface LoginScreenProps {
@@ -22,10 +21,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
       <div className="w-full max-w-md text-center">
         <h1 className="text-5xl font-bold text-yellow-400 mb-2">
-          Monkey Scream Clicker
+          Kokkachi
         </h1>
         <p className="text-gray-300 mb-8">
-          Click the monkey. Hear him scream. Join the global phenomenon.
+          Click Kokkachi. Hear it scream. Join the global phenomenon.
         </p>
         <div className="bg-gray-800 p-8 rounded-xl shadow-2xl">
           <h2 className="text-2xl font-semibold mb-6">Enter Your Email to Play</h2>

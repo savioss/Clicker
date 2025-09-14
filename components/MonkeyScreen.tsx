@@ -1,5 +1,6 @@
 import React from 'react';
-import { MonkeyIcon } from './icons/MonkeyIcon';
+import { NORMAL_KOKKACHI_IMAGE, SCARY_KOKKACHI_IMAGE } from '../constants';
+import { RecentPlayers } from './RecentPlayers';
 
 interface MonkeyScreenProps {
   email: string;
@@ -8,6 +9,7 @@ interface MonkeyScreenProps {
   onMonkeyClick: () => void;
   onLogout: () => void;
   isScreaming: boolean;
+  recentPlayers: Array<{ email: string; clicks: number }>;
 }
 
 const StatCard: React.FC<{ title: string; value: string; color: string }> = ({ title, value, color }) => (
@@ -24,6 +26,7 @@ export const MonkeyScreen: React.FC<MonkeyScreenProps> = ({
   onMonkeyClick,
   onLogout,
   isScreaming,
+  recentPlayers,
 }) => {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -53,23 +56,37 @@ export const MonkeyScreen: React.FC<MonkeyScreenProps> = ({
             <StatCard title="Total Clicks Worldwide" value={totalClicks.toLocaleString()} color="text-cyan-400" />
         </div>
         
-        <div 
-          onClick={onMonkeyClick}
-          onKeyDown={handleKeyDown}
-          tabIndex={0}
-          className={`w-64 h-64 sm:w-80 sm:h-80 cursor-pointer rounded-full transition-transform transform duration-150 ease-in-out active:scale-95 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-yellow-500 ${isScreaming ? 'animate-shake' : ''}`}
-          style={{
-            animation: isScreaming ? 'shake 0.5s' : 'none'
-          }}
-          role="button"
-          aria-label="Click me to make the monkey scream"
-        >
-          <MonkeyIcon isScreaming={isScreaming} className="w-full h-full drop-shadow-2xl" />
+        <div className="w-full flex flex-col lg:flex-row justify-center items-center lg:items-start gap-8 md:gap-16">
+            {/* Kokkachi & Action Text Wrapper */}
+            <div className="flex flex-col items-center">
+              <div 
+                onClick={onMonkeyClick}
+                onKeyDown={handleKeyDown}
+                tabIndex={0}
+                className={`w-64 h-64 sm:w-80 sm:h-80 rounded-full cursor-pointer active:scale-95 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-yellow-500 transition-transform transform duration-150 ease-in-out flex-shrink-0 ${isScreaming ? 'animate-shake' : ''}`}
+                style={{
+                  animation: isScreaming ? 'shake 0.075s' : 'none'
+                }}
+                role="button"
+                aria-label="Click me to make Kokkachi scream"
+              >
+                <img 
+                  src={isScreaming ? SCARY_KOKKACHI_IMAGE : NORMAL_KOKKACHI_IMAGE} 
+                  alt={isScreaming ? "Scary Kokkachi" : "Smiling Kokkachi"}
+                  className="w-full h-full object-cover rounded-full drop-shadow-2xl"
+                />
+              </div>
+               <p className="mt-6 text-gray-400 text-lg">Click Kokkachi!</p>
+            </div>
+            
+            {/* Recent Players Wrapper */}
+            <div className="w-full max-w-xs sm:w-60">
+              <RecentPlayers players={recentPlayers} />
+            </div>
         </div>
-        <p className="mt-6 text-gray-400 text-lg">Click the monkey!</p>
       </main>
       <footer className="w-full text-center text-gray-500 text-sm p-4">
-        <p>&copy; {new Date().getFullYear()} Monkey Scream Clicker. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Kokkachi. All rights reserved.</p>
       </footer>
        <style>{`
         @keyframes shake {
@@ -78,7 +95,14 @@ export const MonkeyScreen: React.FC<MonkeyScreenProps> = ({
           20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
         .animate-shake {
-          animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+          animation: shake 0.075s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
         }
       `}</style>
     </div>
